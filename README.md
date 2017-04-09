@@ -5,11 +5,11 @@ CUDA Project
  - 정방형의 행렬 곱셈
  - P = M * N
 
-행렬의 크기를 변화시켜 처리 시간 측정 및 속도 향상 계산
+행렬의 크기를 변화시켜 처리 시간 측정 및 속도 향상 계산  
 CPU VS with GPU?
 
 ### 제출물
-CUDA 프로젝트, Screentshot(Result), discussion(report - .doc)
+CUDA 프로젝트, Screentshot(Result), discussion(report - .doc)  
 file format - .zip
 
 ### 추가
