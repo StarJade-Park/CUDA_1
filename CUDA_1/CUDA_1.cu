@@ -1,20 +1,16 @@
 ﻿#include "CUDA_1.cuh"
-#include "cuda.h"
-#include <iostream>
-#include <cufft.h>
-#include "cublas_v2.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include "device_launch_parameters.h"
 
+using std::cout;
+using std::endl;
 
-GPUCUDA::GPUCUDA(void)
+CMatrixMultiply::CMatrixMultiply(void)
 {
 
 }
 
-GPUCUDA::~GPUCUDA(void)
+CMatrixMultiply::~CMatrixMultiply(void)
 {
+
 }
 
 __global__ void helloWorld(char *str)
@@ -32,7 +28,7 @@ __global__ void multiplicationKernel(float* lf, int Width)
 
 }
 
-char* GPUCUDA::cuda_example(char *str)
+char* CMatrixMultiply::cuda_example(char *str)
 {
 	// allocate memory on the device
 	char *d_str;
@@ -47,24 +43,34 @@ char* GPUCUDA::cuda_example(char *str)
 	dim3 dimBlock(6);	// one thread per character
 
 	// invoke the kernel
-	helloWorld << < dimGrid, dimBlock >> > (d_str);
+	helloWorld <<< dimGrid, dimBlock >>> (d_str);
 
 	// retrieve the results from the device
 	cudaMemcpy(str, d_str, size, cudaMemcpyDeviceToHost);
 
 	// free up the allocated memory on the device
+	delete[] d_str;
 	cudaFree(d_str);
 
 	return str;
 }
 
-void GPUCUDA::MatrixMultiplication(float* M, float* N, float* P, int Width)‏
+
+bool CMatrixMultiply::MatrixMultiplyUsingCPU()‏
 {
+	cout << "Using CPU " << endl;
+
+
+}
+
+bool CMatrixMultiply::MatrixMultiplyUsingCUDA()‏
+{
+	cout << "Using CUDA(GPU)" << endl;
+
 	int size = Width * Width * sizeof(float);
 	float* Md, Nd, Pd;
 
 	// Allocate device memory for M, N and P
-
 	cudaArray* cuArray;
 
 	// copy M and N to allocated device memory location

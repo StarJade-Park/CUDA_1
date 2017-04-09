@@ -124,6 +124,18 @@
   <ItemGroup>
     <CustomBuild Include="CUDA_1.cuh" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="helper_cuda.h" />
+    <ClInclude Include="helper_cuda_drvapi.h" />
+    <ClInclude Include="helper_cuda_gl.h" />
+    <ClInclude Include="helper_cusolver.h" />
+    <ClInclude Include="helper_functions.h" />
+    <ClInclude Include="helper_gl.h" />
+    <ClInclude Include="helper_image.h" />
+    <ClInclude Include="helper_math.h" />
+    <ClInclude Include="helper_string.h" />
+    <ClInclude Include="helper_timer.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 8.0.targets" />

@@ -1,17 +1,20 @@
 ﻿#pragma once
-#include <cuda_runtime.h>
+#include "Header.h"
 
 #ifdef __cplusplus 
 extern "C" {//<-- extern 시작
 #endif
 
-	class GPUCUDA
+	class CMatrixMultiply
 	{
 	public:
-		GPUCUDA(void);
-		virtual ~GPUCUDA(void);
+		CMatrixMultiply(void);
+		virtual ~CMatrixMultiply(void);
+
 		char* cuda_example(char *str);
-		void MatrixMultiplication(float* M, float* N, float* P, int Width)‏;
+
+		bool MatrixMultiplyUsingCPU()‏;
+		bool MatrixMultiplyUsingCUDA()‏;
 	};
 
 #ifdef __cplusplus 
