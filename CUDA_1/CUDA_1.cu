@@ -19,15 +19,6 @@ __global__ void helloWorld(char *str)
 	str[idx] += idx;
 }
 
-__global__ void multiplicationKernel(float* lf, int Width)
-{
-	int idx = __cudaGet_blockIdx().x * __cudaGet_blockDim().x + __cudaGet_threadIdx().x;
-	int idy = __cudaGet_blockIdx().y * __cudaGet_blockDim().y + __cudaGet_threadIdx().y;
-
-
-
-}
-
 char* CMatrixMultiply::cuda_example(char *str)
 {
 	// allocate memory on the device
@@ -55,30 +46,23 @@ char* CMatrixMultiply::cuda_example(char *str)
 	return str;
 }
 
+// Allocate device memory for M, N and P
+// copy M and N to allocated device memory location
+// Kernel invocation code to let the device perform the actual multiplication
+// Read P from the device
+// Free device matrices	​
 
-bool CMatrixMultiply::MatrixMultiplyUsingCPU()‏
+bool CMatrixMultiply::MatrixMultiplyUsingCPU(const dim3& dimsM, const dim3& dimsN)‏
 {
-	cout << "Using CPU " << endl;
-
 
 }
 
-bool CMatrixMultiply::MatrixMultiplyUsingCUDA()‏
+bool CMatrixMultiply::MatrixMultiplyUsingCUDA(const dim3& dimsM, const dim3& dimsN)‏
 {
-	cout << "Using CUDA(GPU)" << endl;
 
-	int size = Width * Width * sizeof(float);
-	float* Md, Nd, Pd;
+}
 
-	// Allocate device memory for M, N and P
-	cudaArray* cuArray;
-
-	// copy M and N to allocated device memory location
-
-	// Kernel invocation code to let the device perform the actual multiplication
-
-	// Read P from the device
-
-	// Free device matrices	​
-
+bool CMatrixMultiply::matrixMultiplyUsingCUBLAS(const dim3& dimsM, const dim3& dimsN)
+{
+	return false;
 }

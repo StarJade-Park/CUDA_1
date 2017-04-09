@@ -125,6 +125,8 @@
     <CustomBuild Include="CUDA_1.cuh" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="drvapi_error_string.h" />
+    <ClInclude Include="Header.h" />
     <ClInclude Include="helper_cuda.h" />
     <ClInclude Include="helper_cuda_drvapi.h" />
     <ClInclude Include="helper_cuda_gl.h" />
@@ -135,6 +137,7 @@
     <ClInclude Include="helper_math.h" />
     <ClInclude Include="helper_string.h" />
     <ClInclude Include="helper_timer.h" />
+    <ClInclude Include="nvrtc_helper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

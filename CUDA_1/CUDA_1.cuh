@@ -1,8 +1,10 @@
 ﻿#pragma once
 #include "Header.h"
 
+#define BLOCKSIZE 32
+
 #ifdef __cplusplus 
-extern "C" {//<-- extern 시작
+extern "C" {
 #endif
 
 	class CMatrixMultiply
@@ -13,8 +15,11 @@ extern "C" {//<-- extern 시작
 
 		char* cuda_example(char *str);
 
-		bool MatrixMultiplyUsingCPU()‏;
-		bool MatrixMultiplyUsingCUDA()‏;
+		bool MatrixMultiplyUsingCPU(const dim3& dimsM, const dim3& dimsN)‏;
+		bool MatrixMultiplyUsingCUDA(const dim3& dimsM, const dim3& dimsN)‏;
+
+		// 추가
+		bool matrixMultiplyUsingCUBLAS(const dim3& dimsM, const dim3& dimsN);
 	};
 
 #ifdef __cplusplus 
