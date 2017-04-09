@@ -1,4 +1,4 @@
-#include "CUDA_1.cuh"
+﻿#include "CUDA_1.cuh"
 #include "cuda.h"
 #include <iostream>
 #include <cufft.h>
@@ -21,6 +21,15 @@ __global__ void helloWorld(char *str)
 {
 	int idx = __cudaGet_blockIdx().x * __cudaGet_blockDim().x + __cudaGet_threadIdx().x;
 	str[idx] += idx;
+}
+
+__global__ void multiplicationKernel(float* lf, int Width)
+{
+	int idx = __cudaGet_blockIdx().x * __cudaGet_blockDim().x + __cudaGet_threadIdx().x;
+	int idy = __cudaGet_blockIdx().y * __cudaGet_blockDim().y + __cudaGet_threadIdx().y;
+
+
+
 }
 
 char* GPUCUDA::cuda_example(char *str)
@@ -47,4 +56,23 @@ char* GPUCUDA::cuda_example(char *str)
 	cudaFree(d_str);
 
 	return str;
+}
+
+void GPUCUDA::MatrixMultiplication(float* M, float* N, float* P, int Width)‏
+{
+	int size = Width * Width * sizeof(float);
+	float* Md, Nd, Pd;
+
+	// Allocate device memory for M, N and P
+
+	cudaArray* cuArray;
+
+	// copy M and N to allocated device memory location
+
+	// Kernel invocation code to let the device perform the actual multiplication
+
+	// Read P from the device
+
+	// Free device matrices	​
+
 }

@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 #include <cuda_runtime.h>
 
 #ifdef __cplusplus 
-extern "C" {//<-- extern ½ÃÀÛ
+extern "C" {//<-- extern ì‹œìž‘
 #endif
 
 	class GPUCUDA
@@ -11,6 +11,7 @@ extern "C" {//<-- extern ½ÃÀÛ
 		GPUCUDA(void);
 		virtual ~GPUCUDA(void);
 		char* cuda_example(char *str);
+		void MatrixMultiplication(float* M, float* N, float* P, int Width)â€;
 	};
 
 #ifdef __cplusplus 
