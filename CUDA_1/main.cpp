@@ -13,7 +13,7 @@
 	## 추가
 	메모리 활용 또는 CUBLAS를 사용하여 속도 향상 여부 확인
 */
-
+// #pragma warning(disable: 4996)
 #include <iostream>
 #include "CUDA_1.cuh"
 
@@ -67,13 +67,15 @@ void example_cuda()
 int MatrixMultiplication(const dim3& dimsM, const dim3& dimsN)
 {
 
-	CMatrixMultiply MM_parameter;
+	CMatrixMultiply MM_parameter;	// CUDA_1.h
+	StopWatchWin watch;				// helper_timer.h
 	bool MatrixMultiplyResult;
-	StopWatchWin watch;
 
+	// init
 	MatrixMultiplyResult = false;
 	watch.reset();
 
+	// GPU part
 	cout << "GPU matrix multiplication is start!" << endl;
 	watch.start();
 	MatrixMultiplyResult = MM_parameter.MatrixMultiplyUsingCUDA(dimsM, dimsN);
@@ -86,6 +88,7 @@ int MatrixMultiplication(const dim3& dimsM, const dim3& dimsN)
 	cout << "GPU matrix multiplication complete time : " << watch.getTime() << endl;
 	cout << endl;
 
+	// CPU part
 	cout << "CPU matrix multiplication is start!" << endl;
 	watch.reset();
 	watch.start();
@@ -99,6 +102,6 @@ int MatrixMultiplication(const dim3& dimsM, const dim3& dimsN)
 
 	cout << "All(CPU, GPU) matrix multiplication is complete!" << endl;
 
-	// TODO : 추가
+	// TODO : 추가 CUBLAS
 	return 0;
 }

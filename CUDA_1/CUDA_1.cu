@@ -54,6 +54,28 @@ char* CMatrixMultiply::cuda_example(char *str)
 
 bool CMatrixMultiply::MatrixMultiplyUsingCPU(const dim3& dimsM, const dim3& dimsN)‏
 {
+	// Allocate device memory for M, N and P
+	// M
+	int size_M = dimsM.x * dimsM.y * dimsM.z;		// BLOCKSIZE, BLOCKSIZE, 1
+	int sizeOfMemory_M = size_M * sizeof(float);
+	float* f_M = new float[sizeOfMemory_M];
+	// N
+	int size_N = dimsN.x * dimsN.y * dimsN.z;		// BLOCKSIZE, BLOCKSIZE, 1
+	int sizeOfMemory_N = size_N * sizeof(float);
+	float* f_N = new float[sizeOfMemory_N];
+	// P
+	dim3 dimsP;
+	int sizeOfMemory_P = dimsP.x * dimsP.y * dimsP.z * sizeof(float);
+	float* f_P = new float[sizeOfMemory_P];
+
+
+	// copy M and N to allocated device memory location
+
+	// Kernel invocation code to let the device perform the actual multiplication
+
+	// Read P from the device
+
+	// Free device matrices
 
 }
 
