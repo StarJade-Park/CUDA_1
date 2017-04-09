@@ -5,11 +5,11 @@
 extern "C" {//<-- extern ½ÃÀÛ
 #endif
 
-	class CGPUACC
+	class GPUCUDA
 	{
 	public:
-		CGPUACC(void);
-		virtual ~CGPUACC(void);
+		GPUCUDA(void);
+		virtual ~GPUCUDA(void);
 		char* cuda_example(char *str);
 	};
 

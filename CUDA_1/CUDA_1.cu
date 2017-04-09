@@ -8,22 +8,22 @@
 #include "device_launch_parameters.h"
 
 
-CGPUACC::CGPUACC(void)
+GPUCUDA::GPUCUDA(void)
 {
 
 }
 
-CGPUACC::~CGPUACC(void)
+GPUCUDA::~GPUCUDA(void)
 {
 }
 
-__global__ void helloWorld(int a, int b, int* c)
+__global__ void helloWorld(char *str)
 {
-	int tid = __cudaGet_blockIdx().x * __cudaGet_blockDim().x + __cudaGet_threadIdx().x;
-	c[tid] = a + b;
+	int idx = __cudaGet_blockIdx().x * __cudaGet_blockDim().x + __cudaGet_threadIdx().x;
+	str[idx] += idx;
 }
 
-char* CGPUACC::cuda_example(char *str)
+char* GPUCUDA::cuda_example(char *str)
 {
 	// allocate memory on the device
 	char *d_str;

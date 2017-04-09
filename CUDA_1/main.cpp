@@ -1,14 +1,6 @@
 #include <iostream>
 #include "CUDA_1.cuh"
 
-int sum_int(int a, int b);
-int sum_int(int a, int b)
-{
-	int c;
-	c = a + b;
-	return c;
-}
-
 int main(int argc, char **argv)
 {
 	int i;
@@ -18,15 +10,16 @@ int main(int argc, char **argv)
 
 	// mangle contents of output
 	// the null character is left intact for simplicity
-	for (i = 0; i < 12; i++)
+	for (i = 0; i < sizeof(str)-1; i++)
 		str[i] -= i;
-
 	printf("%s\n", str);
 
 	// cuda part
-	CGPUACC gpuacc;
-	printf("%d\n", gpuacc.cuda_example(str));
+	GPUCUDA cuda;
+	char* cuda_str = cuda.cuda_example(str);
+	printf("%s\n", cuda_str);
 
+	printf("\nEnd of program, press any key. ");
 	getchar();
 	return 0;
 }
