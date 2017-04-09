@@ -26,4 +26,4 @@ file format - .zip
  - CPU: Intel i7-4710 HQ @ 2.50 GHz
  - RAM: 8.00 GB
  - GPU: Nvidia GeForce 850M
-  - VRAM: GDDR5 2 GB
+   - VRAM: GDDR5 2 GB
