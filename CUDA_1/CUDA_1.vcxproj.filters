@@ -18,6 +18,9 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Matrix_Multiplication.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="CUDA_1.cu">
@@ -63,10 +66,10 @@
     <ClInclude Include="drvapi_error_string.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Header.h">
+    <ClInclude Include="nvrtc_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="nvrtc_helper.h">
+    <ClInclude Include="Matrix_Multiplication.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

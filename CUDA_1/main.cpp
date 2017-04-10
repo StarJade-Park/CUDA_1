@@ -15,12 +15,12 @@
 */
 // #pragma warning(disable: 4996)
 #include <iostream>
-#include "CUDA_1.cuh"
+#include "Matrix_Multiplication.h"
 
 using namespace std;
 
-void example_cuda();
-int MatrixMultiplication(const dim3& dimsA, const dim3& dimsB);
+void exampleCuda();
+int MatrixMultiplicationAll(const dim3& dimsA, const dim3& dimsB);
 
 int main(int argc, char **argv)
 {
@@ -29,14 +29,15 @@ int main(int argc, char **argv)
 	dim3 dimSmall(BLOCKSIZE, BLOCKSIZE, 1);
 	dim3 dimBig(BLOCKSIZE * 50, BLOCKSIZE * 50, 1);
 
-	int MMResult = MatrixMultiplication(dimSmall, dimSmall);
+	cout << "32 x 32 matrix" << endl;
+	int MMResult = MatrixMultiplicationAll(dimSmall, dimSmall);
 	if (MMResult != 0) {
 		exit(1);
 	}
 
-	cout << endl << "==================" << endl;
-
-	int MMResult = MatrixMultiplication(dimBig, dimBig);
+	cout << endl << "==================================" << endl;
+	cout << "1600 x 1600 matrix" << endl;
+	//MMResult = MatrixMultiplicationAll(dimBig, dimBig);
 
 	// for debug
 	printf("\nEnd of program, press any key. ");
@@ -45,8 +46,7 @@ int main(int argc, char **argv)
 	exit(MMResult);
 }
 
-
-void example_cuda()
+void exampleCuda()
 {
 	// desired output
 	char str[] = "Hello World!";
@@ -58,50 +58,46 @@ void example_cuda()
 	printf("%s\n", str);
 
 	// cuda part
-	CMatrixMultiply cuda;
-	char* cuda_str = cuda.cuda_example(str);
+	CUDAExampleClass cuda;
+	char* cuda_str = cuda.cudaExample(str);
 
 	printf("%s\n", cuda_str);
 }
 
-int MatrixMultiplication(const dim3& dimsM, const dim3& dimsN)
+int MatrixMultiplicationAll(const dim3& dimsM, const dim3& dimsN)
 {
-
-	CMatrixMultiply MM_parameter;	// CUDA_1.h
-	StopWatchWin watch;				// helper_timer.h
+	MatrixMultiplication MM_parameter;	// CUDA_1.h
 	bool MatrixMultiplyResult;
 
 	// init
-	MatrixMultiplyResult = false;
-	watch.reset();
+	MatrixMultiplyResult = true;
 
 	// GPU part
 	cout << "GPU matrix multiplication is start!" << endl;
-	watch.start();
 	MatrixMultiplyResult = MM_parameter.MatrixMultiplyUsingCUDA(dimsM, dimsN);
 
 	if (!MatrixMultiplyResult) {
 		return MatrixMultiplyResult;
 	}
-	watch.stop();
-
-	cout << "GPU matrix multiplication complete time : " << watch.getTime() << endl;
 	cout << endl;
 
 	// CPU part
 	cout << "CPU matrix multiplication is start!" << endl;
-	watch.reset();
-	watch.start();
 	MatrixMultiplyResult = MM_parameter.MatrixMultiplyUsingCPU(dimsM, dimsN);
 	if (!MatrixMultiplyResult) {
 		return MatrixMultiplyResult;
 	}
-	watch.stop();
-	cout << "CPU matrix multiplication complete time : " << watch.getTime() << endl;
 	cout << endl;
 
-	cout << "All(CPU, GPU) matrix multiplication is complete!" << endl;
-
 	// TODO : Ãß°¡ CUBLAS
+	cout << "CUBLAS matrix multiplication is start!" << endl;
+	MatrixMultiplyResult = MM_parameter.MatrixMultiplyUsingCUBLAS(dimsM, dimsN);
+	if (!MatrixMultiplyResult) {
+		return MatrixMultiplyResult;
+	}
+	cout << endl;
+
+	cout << "Matrix multiplication function end." << endl;
+
 	return 0;
 }
