@@ -45,7 +45,7 @@ char* MulCUDA::cudaExample(char *str)
 	return str;
 }
 
-__global__ void MulCUDA::mulMatrixCUDA(float *P, float *M, float *N, int widthM, int widthN)
+__global__ void mulMatrixCUDA(float *P, float *M, float *N, int widthM, int widthN)
 {
 	int mBegin	= widthM * widthN * BLOCKSIZE;
 	int mEnd	= mBegin + widthM - 1;

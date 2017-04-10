@@ -42,7 +42,8 @@ extern "C" {
 		virtual ~MulCUDA(void);
 
 		char* cudaExample(char *str);
-		__global__ void mulMatrixCUDA(float * P, float * M, float * N, int widthM, int widthN);
+		//Error	illegal combination of memory qualifiers
+		//__global__ void mulMatrixCUDA(float * P, float * M, float * N, int widthM, int widthN);
 	};
 
 #ifdef __cplusplus 

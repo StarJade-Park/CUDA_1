@@ -176,15 +176,15 @@ bool MatrixMultiplication::CheckResult(const dim3& dimsM, const dim3& dimsP, con
 	// |<x, y>_cpu - <x,y>_gpu|/<|x|, |y|>  < eps
 
 	for (int i = 0; i < (int)(dimsP.x * dimsP.y); i++) {
-		double abs_err = fabs(f_P[i] - (dimsM.x * ValN));
-		double dot_length = dimsM.x;
-		double abs_val = fabs(f_P[i]);
-		double rel_err = abs_err / abs_val / dot_length;
+		double absErr = fabs(f_P[i] - (dimsM.x * ValN));
+		double dotLength = dimsM.x;
+		double absVal = fabs(f_P[i]);
+		double relErr = absErr / absVal / dotLength;
 
-		if (rel_err > EPS) {
-			cerr << "Error! Matrix[" << i << "]=" << f_P[i]
-				<< " , ref=" << dimsM.x * ValN
-				<< " error term is > " << EPS << endl;
+		if (relErr > EPS) {
+			//cerr << "Error! Matrix[" << i << "]=" << f_P[i]
+			//	<< " , ref=" << dimsM.x * ValN
+			//	<< " error term is > " << EPS << endl;
 			correct = false;
 		}
 	}
