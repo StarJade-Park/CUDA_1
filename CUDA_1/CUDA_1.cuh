@@ -33,13 +33,16 @@ void MatrixMultiplication(float* M, float* N, float* P, int Width)‏
 extern "C" {
 #endif
 
-	class CUDAExampleClass
+#define BLOCKSIZE 32
+
+	class MulCUDA
 	{
 	public:
-		CUDAExampleClass(void);
-		virtual ~CUDAExampleClass(void);
+		MulCUDA(void);
+		virtual ~MulCUDA(void);
 
 		char* cudaExample(char *str);
+		__global__ void mulMatrixCUDA(float * P, float * M, float * N, int widthM, int widthN);
 	};
 
 #ifdef __cplusplus 

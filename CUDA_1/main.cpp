@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 
 	cout << endl << "==================================" << endl;
 	cout << "1600 x 1600 matrix" << endl;
-	//MMResult = MatrixMultiplicationAll(dimBig, dimBig);
+	MMResult = MatrixMultiplicationAll(dimBig, dimBig);
 
 	// for debug
 	printf("\nEnd of program, press any key. ");
@@ -58,7 +58,7 @@ void exampleCuda()
 	printf("%s\n", str);
 
 	// cuda part
-	CUDAExampleClass cuda;
+	MulCUDA cuda;
 	char* cuda_str = cuda.cudaExample(str);
 
 	printf("%s\n", cuda_str);
@@ -72,18 +72,18 @@ int MatrixMultiplicationAll(const dim3& dimsM, const dim3& dimsN)
 	// init
 	MatrixMultiplyResult = true;
 
-	// GPU part
-	cout << "GPU matrix multiplication is start!" << endl;
-	MatrixMultiplyResult = MM_parameter.MatrixMultiplyUsingCUDA(dimsM, dimsN);
-
+	// CPU part
+	cout << "CPU matrix multiplication is start!" << endl;
+	MatrixMultiplyResult = MM_parameter.MatrixMultiplyUsingCPU(dimsM, dimsN);
 	if (!MatrixMultiplyResult) {
 		return MatrixMultiplyResult;
 	}
 	cout << endl;
 
-	// CPU part
-	cout << "CPU matrix multiplication is start!" << endl;
-	MatrixMultiplyResult = MM_parameter.MatrixMultiplyUsingCPU(dimsM, dimsN);
+	// GPU part
+	cout << "GPU matrix multiplication is start!" << endl;
+	MatrixMultiplyResult = MM_parameter.MatrixMultiplyUsingCUDA(dimsM, dimsN);
+
 	if (!MatrixMultiplyResult) {
 		return MatrixMultiplyResult;
 	}

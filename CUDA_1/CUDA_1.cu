@@ -3,12 +3,12 @@
 using std::cout;
 using std::endl;
 
-CUDAExampleClass::CUDAExampleClass(void)
+MulCUDA::MulCUDA(void)
 {
 
 }
 
-CUDAExampleClass::~CUDAExampleClass(void)
+MulCUDA::~MulCUDA(void)
 {
 
 }
@@ -19,7 +19,7 @@ __global__ void helloWorld(char *str)
 	str[idx] += idx;
 }
 
-char* CUDAExampleClass::cudaExample(char *str)
+char* MulCUDA::cudaExample(char *str)
 {
 	// allocate memory on the device
 	char *d_str;
@@ -44,3 +44,39 @@ char* CUDAExampleClass::cudaExample(char *str)
 
 	return str;
 }
+
+__global__ void MulCUDA::mulMatrixCUDA(float *P, float *M, float *N, int widthM, int widthN)
+{
+	int mBegin	= widthM * widthN * BLOCKSIZE;
+	int mEnd	= mBegin + widthM - 1;
+	int mStep	= BLOCKSIZE;
+	
+	int nBegin	= BLOCKSIZE * __cudaGet_blockIdx().x;
+	int nStep	= BLOCKSIZE * widthN;
+
+	float Csub	= 0;
+
+	for (int mIndex = mBegin, nIndex = nBegin; mIndex <= mEnd; mIndex += mStep, nIndex += nStep)
+	{
+		__shared__ float Ms[BLOCKSIZE][BLOCKSIZE];
+		__shared__ float Ns[BLOCKSIZE][BLOCKSIZE];
+
+		Ms[__cudaGet_threadIdx().y][__cudaGet_threadIdx().x]
+			= M[mBegin + widthM * __cudaGet_threadIdx().y + __cudaGet_threadIdx().x];
+
+		Ns[__cudaGet_threadIdx().y][__cudaGet_threadIdx().x]
+			= N[nBegin + widthN * __cudaGet_threadIdx().y + __cudaGet_threadIdx().x];
+
+
+		for (int i = 0; i < BLOCKSIZE; ++i)
+		{
+			Csub += Ms[__cudaGet_threadIdx().y][i] * Ns[i][__cudaGet_threadIdx().x];
+		}
+
+	}
+
+
+	int pIndex = widthM * BLOCKSIZE * __cudaGet_blockIdx().y + BLOCKSIZE * __cudaGet_blockIdx().x;
+	P[pIndex + widthM * __cudaGet_threadIdx().y + __cudaGet_threadIdx().x];
+}
+

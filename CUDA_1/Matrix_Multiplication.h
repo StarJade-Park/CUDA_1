@@ -2,10 +2,9 @@
 #include "CUDA_1.cuh"
 #include "helper_timer.h"
 
-#define BLOCKSIZE 32
 
-#define	ValA	1.0f
-#define	ValB	0.01f
+#define	ValM	1.0f
+#define	ValN	0.01f
 
 #define EPS		1.e-6
 
@@ -21,7 +20,7 @@ public:
 	void	setTimer();
 	double	getTimer();
 
-	void initMatrix(MATRIX_DT dataArr[], const int matrixSize, const MATRIX_DT value);
+	void InitMatrix(MATRIX_DT dataArr[], const int matrixSize, const MATRIX_DT value);
 
 	bool CheckResult(const dim3& dimsM, const dim3& dimsP, const MATRIX_DT* f_P);
 

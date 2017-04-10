@@ -37,7 +37,7 @@ double MatrixMultiplication::getTimer()
 
 bool MatrixMultiplication::MatrixMultiplyUsingCPU(const dim3& dimsM, const dim3& dimsN){
 	// M 
-	unsigned int size_M = dimsM.x * dimsM.y;		// BLOCKSIZE, BLOCKSIZE
+	unsigned int size_M = dimsM.x * dimsM.y;  // BLOCKSIZE, BLOCKSIZE
 	unsigned int sizeOfMemory_M = size_M * sizeof(MATRIX_DT);
 	MATRIX_DT* DT_M = new MATRIX_DT[sizeOfMemory_M];
 
@@ -56,9 +56,9 @@ bool MatrixMultiplication::MatrixMultiplyUsingCPU(const dim3& dimsM, const dim3&
 		exit(EXIT_FAILURE);
 	}
 
-	// init host
-	initMatrix(DT_M, size_M, ValA);
-	initMatrix(DT_N, size_N, ValB);
+	// init
+	InitMatrix(DT_M, size_M, ValM);
+	InitMatrix(DT_N, size_N, ValN);
 
 	// multiply
 	setTimer();
@@ -72,12 +72,13 @@ bool MatrixMultiplication::MatrixMultiplyUsingCPU(const dim3& dimsM, const dim3&
 			DT_P[i * dimsP.x + j] = Csub;
 		}
 	}
+
 	cout << "Matrix Multiply Using CPU : " << getTimer() << endl;
 
-	// copy (device -> host)
+	// check result
 	bool correct = CheckResult(dimsM, dimsP, DT_P);
 
-	// free array
+	// free memory
 	delete[] DT_M;
 	delete[] DT_N;
 	delete[] DT_P;
@@ -93,14 +94,71 @@ bool MatrixMultiplication::MatrixMultiplyUsingCPU(const dim3& dimsM, const dim3&
 // Free device matrices	​
 
 bool MatrixMultiplication::MatrixMultiplyUsingCUDA(const dim3& dimsM, const dim3& dimsN) {
-	return true;
+	// M 
+	unsigned int size_M = dimsM.x * dimsM.y;  // BLOCKSIZE, BLOCKSIZE
+	unsigned int sizeOfMemory_M = size_M * sizeof(MATRIX_DT);
+	MATRIX_DT* hostM = new MATRIX_DT[sizeOfMemory_M];
+
+	// N
+	unsigned int size_N = dimsN.x * dimsN.y;
+	unsigned int sizeOfMemory_N = size_N * sizeof(MATRIX_DT);
+	MATRIX_DT* hostN = new MATRIX_DT[sizeOfMemory_N];
+
+	// P
+	dim3 dimsP(dimsM.x, dimsN.y, 1);
+	unsigned int sizeOfMemory_P = dimsP.x * dimsP.y * sizeof(MATRIX_DT);
+	MATRIX_DT* hostP = new MATRIX_DT[sizeOfMemory_P];
+
+	if (hostM == NULL || hostN == NULL || hostP == NULL) {
+		cerr << "Failed to allocate matrix!" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	// init & alloc
+	InitMatrix(hostM, size_M, ValM);
+	InitMatrix(hostN, size_N, ValN);
+
+	CUdeviceptr deviceM, deviceN, deviceP;	// typedef unsigned long long CUdeviceptr;
+	cuMemAlloc(&deviceM, sizeOfMemory_M);	// CUresult CUDAAPI cuMemAlloc(CUdeviceptr *dptr, size_t bytesize);
+	cuMemAlloc(&deviceN, sizeOfMemory_N);
+	cuMemAlloc(&deviceP, sizeOfMemory_P);
+
+	// copy (host -> device)
+	// extern __host__ cudaError_t CUDARTAPI cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind);
+	cudaMemcpy(&deviceM, hostM, sizeOfMemory_M, cudaMemcpyHostToDevice);
+	cudaMemcpy(&deviceN, hostN, sizeOfMemory_N, cudaMemcpyHostToDevice);
+	cudaMemcpy(&deviceP, hostP, sizeOfMemory_P, cudaMemcpyHostToDevice);
+
+	// multiply
+	setTimer();
+
+	cout << "Matrix Multiply Using CPU : " << getTimer() << endl;
+
+	// copy (device -> host)
+	cudaMemcpy(hostM, &deviceM, sizeOfMemory_M, cudaMemcpyDeviceToHost);
+	cudaMemcpy(hostN, &deviceN, sizeOfMemory_N, cudaMemcpyDeviceToHost);
+	cudaMemcpy(hostP, &deviceP, sizeOfMemory_P, cudaMemcpyDeviceToHost);
+
+	// check result
+	bool correct = CheckResult(dimsM, dimsP, hostP);
+
+	// free memory
+	delete[] hostM;
+	delete[] hostN;
+	delete[] hostP;
+
+	cuMemFree(deviceM);
+	cuMemFree(deviceN);
+	cuMemFree(deviceP);
+
+	return correct;
 }
 
 bool MatrixMultiplication::MatrixMultiplyUsingCUBLAS(const dim3& dimsM, const dim3& dimsN) {
 	return true;
 }
 
-void MatrixMultiplication::initMatrix(MATRIX_DT dataArr[], const int matrixSize, const MATRIX_DT value) {
+void MatrixMultiplication::InitMatrix(MATRIX_DT dataArr[], const int matrixSize, const MATRIX_DT value) {
 	for (int i = 0; i < matrixSize; i++) {
 		dataArr[i] = value;
 		//cout << dataArr[i] << endl;
@@ -110,22 +168,22 @@ void MatrixMultiplication::initMatrix(MATRIX_DT dataArr[], const int matrixSize,
 bool MatrixMultiplication::CheckResult(const dim3& dimsM, const dim3& dimsP, const MATRIX_DT* f_P) {
 
 	// Check the result
-	cout << "Checking computed result for correctness :" << endl;
+	cout << "Checking computed result for correctness..." << endl;
 
 	bool correct = true;
 
 	// test relative error by the formula
-	//     |<x, y>_cpu - <x,y>_gpu|/<|x|, |y|>  < eps
+	// |<x, y>_cpu - <x,y>_gpu|/<|x|, |y|>  < eps
 
 	for (int i = 0; i < (int)(dimsP.x * dimsP.y); i++) {
-		double abs_err = fabs(f_P[i] - (dimsM.x * ValB));
+		double abs_err = fabs(f_P[i] - (dimsM.x * ValN));
 		double dot_length = dimsM.x;
 		double abs_val = fabs(f_P[i]);
 		double rel_err = abs_err / abs_val / dot_length;
 
 		if (rel_err > EPS) {
-			cerr << "Error! Matrix[" << i << " ]=" << f_P[i]
-				<< " , ref=" << dimsM.x * ValB
+			cerr << "Error! Matrix[" << i << "]=" << f_P[i]
+				<< " , ref=" << dimsM.x * ValN
 				<< " error term is > " << EPS << endl;
 			correct = false;
 		}
