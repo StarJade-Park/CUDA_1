@@ -302,7 +302,6 @@ inline char *sdkFindFilePath(const char *filename, const char *executable_path)
     const char *searchPath[] =
     {
         "./",                                       // same dir
-        "./<executable_name>_data_files/",
         "./common/",                                // "/common/" subdir
         "./common/data/",                           // "/common/data/" subdir
         "./data/",                                  // "/data/" subdir

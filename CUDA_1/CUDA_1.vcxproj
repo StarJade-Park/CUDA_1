@@ -86,8 +86,12 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>cuda.lib;cudart.lib;cublas.lib;cufft.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(CudaToolkitLibDir)\\*.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CudaCompile>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <CodeGeneration>compute_35,sm_35</CodeGeneration>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -123,18 +127,13 @@
     <CudaCompile Include="CUDA_1.cu" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="CUDA_1.cuh" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClInclude Include="CUDA_1.cuh" />
     <ClInclude Include="drvapi_error_string.h" />
+    <ClInclude Include="exception.h" />
     <ClInclude Include="helper_cuda.h" />
     <ClInclude Include="helper_cuda_drvapi.h" />
-    <ClInclude Include="helper_cuda_gl.h" />
-    <ClInclude Include="helper_cusolver.h" />
     <ClInclude Include="helper_functions.h" />
-    <ClInclude Include="helper_gl.h" />
     <ClInclude Include="helper_image.h" />
-    <ClInclude Include="helper_math.h" />
     <ClInclude Include="helper_string.h" />
     <ClInclude Include="helper_timer.h" />
     <ClInclude Include="Matrix_Multiplication.h" />

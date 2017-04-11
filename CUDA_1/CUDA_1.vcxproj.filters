@@ -28,33 +28,25 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="CUDA_1.cuh">
+    <ClInclude Include="Matrix_Multiplication.h">
       <Filter>Header Files</Filter>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
+    </ClInclude>
+    <ClInclude Include="drvapi_error_string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="helper_cuda.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="helper_cuda_drvapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="helper_cuda_gl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="helper_cusolver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="helper_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="helper_gl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="helper_image.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="helper_math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="helper_string.h">
@@ -63,13 +55,10 @@
     <ClInclude Include="helper_timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="drvapi_error_string.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="nvrtc_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix_Multiplication.h">
+    <ClInclude Include="CUDA_1.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

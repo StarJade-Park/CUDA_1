@@ -1,190 +1,328 @@
 ﻿#include "Matrix_Multiplication.h"
-#include <iostream>
 
-#include <cuda_runtime.h>
-#include <cufft.h>
-#include <cuda.h>
-#include "device_launch_parameters.h"
+// System includes
+#include <iostream>
+#include <cassert>
+
+// CUDA runtime
+#include "nvrtc_helper.h"
+#include <cudaProfiler.h>
+
+// Helper functions and utilities to work with CUDA
 #include "helper_functions.h"
 #include "helper_cuda.h"
+#include "helper_cuda_drvapi.h"
+#include <cuda.h>
 #include "cublas_v2.h"
 
+// Machine zero
+#define EPS		1.e-6
+
+// Initial values of matrices A and B
+#define	ValA	1.0f
+#define	ValB	0.01f
+
+// Single-precision scalar multiplier of CUBLAS matrix multiplication
+#define	ALPHA	1.0f;	// A, B
+#define	BETA	0.0f;	// C
+
+// Repeat number of matrix multiplication
+#define NLTER	10
+
+// For to access "MatrixMul_kernel.cu"
+#define CU_MatrixMul_Kernel			"CUDA_1.cu"
+#define FN_matrixMulCUDA_block16	"matrixMulCUDA_block16"
+#define FN_matrixMulCUDA_block32	"matrixMulCUDA_block32"
+
+// Used names
 using std::cout;
-using std::endl;
 using std::cerr;
+using std::endl;
 
-MatrixMultiplication::MatrixMultiplication()
-{
-	/* empty */
-}
 
-MatrixMultiplication::~MatrixMultiplication()
-{
-	/* empty */
-}
+int MatrixMultiplyUsingCPU(const dim3 &dimsA, const dim3 &dimsB) {
 
-void MatrixMultiplication::setTimer()
-{
-	mTimer.reset();
-	mTimer.start();
-}
+	// Allocate memory for matrices A, B and C
+	unsigned int sizeA = dimsA.x * dimsA.y;
+	unsigned int memSizeA = sizeA * sizeof(MATRIX_DT);
+	MATRIX_DT *h_A = new MATRIX_DT[memSizeA];
 
-double MatrixMultiplication::getTimer()
-{
-	mTimer.stop();
-	return mTimer.getTime();
-}
+	unsigned int sizeB = dimsB.x * dimsB.y;
+	unsigned int memSizeB = sizeB * sizeof(MATRIX_DT);
+	MATRIX_DT *h_B = new MATRIX_DT[memSizeB];
 
-bool MatrixMultiplication::MatrixMultiplyUsingCPU(const dim3& dimsM, const dim3& dimsN){
-	// M 
-	unsigned int size_M = dimsM.x * dimsM.y;  // BLOCKSIZE, BLOCKSIZE
-	unsigned int sizeOfMemory_M = size_M * sizeof(MATRIX_DT);
-	MATRIX_DT* DT_M = new MATRIX_DT[sizeOfMemory_M];
+	dim3 dimsC(dimsB.x, dimsA.y, 1);
+	unsigned int memSizeC = dimsC.x * dimsC.y * sizeof(MATRIX_DT);
+	MATRIX_DT *h_C = new MATRIX_DT[memSizeC];
 
-	// N
-	unsigned int size_N = dimsN.x * dimsN.y;
-	unsigned int sizeOfMemory_N = size_N * sizeof(MATRIX_DT);
-	MATRIX_DT* DT_N = new MATRIX_DT[sizeOfMemory_N];
-
-	// P
-	dim3 dimsP(dimsM.x, dimsN.y, 1);
-	unsigned int sizeOfMemory_P = dimsP.x * dimsP.y * sizeof(MATRIX_DT);
-	MATRIX_DT* DT_P = new MATRIX_DT[sizeOfMemory_P];
-
-	if (DT_M == NULL || DT_N == NULL || DT_P == NULL) {
+	if (h_A == NULL || h_B == NULL || h_C == NULL) {
 		cerr << "Failed to allocate matrix!" << endl;
 		exit(EXIT_FAILURE);
 	}
 
-	// init
-	InitMatrix(DT_M, size_M, ValM);
-	InitMatrix(DT_N, size_N, ValN);
+	// Initialize memory
+	constantInit(h_A, sizeA, ValA);
+	constantInit(h_B, sizeB, ValB);
 
-	// multiply
-	setTimer();
-	for (unsigned int i = 0; i < dimsP.x; i++) {
-		for (unsigned int j = 0; j < dimsP.y; j++) {
-			MATRIX_DT Csub = 0;
-			for (unsigned int k = j, l = i; k <= j + dimsM.x - 1; k++, l += dimsP.y) {
-				// P = M * N
-				Csub += DT_M[k] * DT_N[l];
-			}
-			DT_P[i * dimsP.x + j] = Csub;
-		}
+	// Invoke the multiply function with timer
+	cout << "Computing result using CPU..." << endl;
+
+	double totalLeadTime = 0;
+	StopWatchWin pfTimer;
+	pfTimer.start();
+	for (int i = 0; i < NLTER; i++) {
+		StopWatchWin timer;
+		timer.start();
+		MatrixMultiplyCPU(h_C, h_A, h_B, dimsC.x, dimsC.y, dimsA.x);
+		timer.stop();
+
+		totalLeadTime += timer.getTime();
+		cout << "Lead time (" << i << "): " << timer.getTime() << endl;
 	}
-
-	cout << "Matrix Multiply Using CPU : " << getTimer() << endl;
-
-	// check result
-	bool correct = CheckResult(dimsM, dimsP, DT_P);
-
-	// free memory
-	delete[] DT_M;
-	delete[] DT_N;
-	delete[] DT_P;
-
-	return correct;
-}
-
-
-// Allocate device memory for M, N and P
-// copy M and N to allocated device memory location
-// Kernel invocation code to let the device perform the actual multiplication
-// Read P from the device
-// Free device matrices	​
-
-bool MatrixMultiplication::MatrixMultiplyUsingCUDA(const dim3& dimsM, const dim3& dimsN) {
-	// M 
-	unsigned int size_M = dimsM.x * dimsM.y;  // BLOCKSIZE, BLOCKSIZE
-	unsigned int sizeOfMemory_M = size_M * sizeof(MATRIX_DT);
-	MATRIX_DT* hostM = new MATRIX_DT[sizeOfMemory_M];
-
-	// N
-	unsigned int size_N = dimsN.x * dimsN.y;
-	unsigned int sizeOfMemory_N = size_N * sizeof(MATRIX_DT);
-	MATRIX_DT* hostN = new MATRIX_DT[sizeOfMemory_N];
-
-	// P
-	dim3 dimsP(dimsM.x, dimsN.y, 1);
-	unsigned int sizeOfMemory_P = dimsP.x * dimsP.y * sizeof(MATRIX_DT);
-	MATRIX_DT* hostP = new MATRIX_DT[sizeOfMemory_P];
-
-	if (hostM == NULL || hostN == NULL || hostP == NULL) {
-		cerr << "Failed to allocate matrix!" << endl;
-		exit(EXIT_FAILURE);
-	}
-
-	// init & alloc
-	InitMatrix(hostM, size_M, ValM);
-	InitMatrix(hostN, size_N, ValN);
-
-	CUdeviceptr deviceM, deviceN, deviceP;	// typedef unsigned long long CUdeviceptr;
-	cuMemAlloc(&deviceM, sizeOfMemory_M);	// CUresult CUDAAPI cuMemAlloc(CUdeviceptr *dptr, size_t bytesize);
-	cuMemAlloc(&deviceN, sizeOfMemory_N);
-	cuMemAlloc(&deviceP, sizeOfMemory_P);
-
-	// copy (host -> device)
-	// extern __host__ cudaError_t CUDARTAPI cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind);
-	cudaMemcpy(&deviceM, hostM, sizeOfMemory_M, cudaMemcpyHostToDevice);
-	cudaMemcpy(&deviceN, hostN, sizeOfMemory_N, cudaMemcpyHostToDevice);
-	cudaMemcpy(&deviceP, hostP, sizeOfMemory_P, cudaMemcpyHostToDevice);
-
-	// multiply
-	setTimer();
-
-	cout << "Matrix Multiply Using CPU : " << getTimer() << endl;
-
-	// copy (device -> host)
-	cudaMemcpy(hostM, &deviceM, sizeOfMemory_M, cudaMemcpyDeviceToHost);
-	cudaMemcpy(hostN, &deviceN, sizeOfMemory_N, cudaMemcpyDeviceToHost);
-	cudaMemcpy(hostP, &deviceP, sizeOfMemory_P, cudaMemcpyDeviceToHost);
-
-	// check result
-	bool correct = CheckResult(dimsM, dimsP, hostP);
-
-	// free memory
-	delete[] hostM;
-	delete[] hostN;
-	delete[] hostP;
-
-	cuMemFree(deviceM);
-	cuMemFree(deviceN);
-	cuMemFree(deviceP);
-
-	return correct;
-}
-
-bool MatrixMultiplication::MatrixMultiplyUsingCUBLAS(const dim3& dimsM, const dim3& dimsN) {
-	return true;
-}
-
-void MatrixMultiplication::InitMatrix(MATRIX_DT dataArr[], const int matrixSize, const MATRIX_DT value) {
-	for (int i = 0; i < matrixSize; i++) {
-		dataArr[i] = value;
-		//cout << dataArr[i] << endl;
-	}
-}
-
-bool MatrixMultiplication::CheckResult(const dim3& dimsM, const dim3& dimsP, const MATRIX_DT* f_P) {
+	pfTimer.stop();
+	cout << "Total lead time: " << totalLeadTime << endl;
+	cout << "Average lead time: " << totalLeadTime / NLTER << endl;
+	cout << "Performance time: " << pfTimer.getTime() << endl;
 
 	// Check the result
-	cout << "Checking computed result for correctness..." << endl;
+	bool correct = CheckResult(dimsA, dimsC, h_C);
+
+	// Clean up memory
+	delete[] h_A;
+	delete[] h_B;
+	delete[] h_C;
+
+	if (correct) {
+		return EXIT_SUCCESS;
+	}
+	else {
+		return EXIT_FAILURE;
+	}
+}
+
+int MatrixMultiplyUsingCUDA(const dim3 &dimsA, const dim3 &dimsB, const int blockSize) {
+
+	// Allocate host memory for matrices A, B and C
+	unsigned int sizeA = dimsA.x * dimsA.y;
+	unsigned int memSizeA = sizeA * sizeof(MATRIX_DT);
+	MATRIX_DT *h_A = new MATRIX_DT[memSizeA];
+
+	unsigned int sizeB = dimsB.x * dimsB.y;
+	unsigned int memSizeB = sizeB * sizeof(MATRIX_DT);
+	MATRIX_DT *h_B = new MATRIX_DT[memSizeB];
+
+	dim3 dimsC(dimsB.x, dimsA.y, 1);
+	unsigned int memSizeC = dimsC.x * dimsC.y * sizeof(MATRIX_DT);
+	MATRIX_DT *h_C = new MATRIX_DT[memSizeC];
+
+	if (h_A == NULL || h_B == NULL || h_C == NULL) {
+		cerr << "Failed to allocate host matrix!" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	// Initialize host memory
+	constantInit(h_A, sizeA, ValA);
+	constantInit(h_B, sizeB, ValB);
+
+	// Initialize device
+	cudaFree(0);
+
+	// Allocate device memory
+	CUdeviceptr d_A, d_B, d_C;
+	checkCudaErrors(cuMemAlloc(&d_A, memSizeA));
+	checkCudaErrors(cuMemAlloc(&d_B, memSizeB));
+	checkCudaErrors(cuMemAlloc(&d_C, memSizeC));
+
+	// Copy host memory to device
+	checkCudaErrors(cuMemcpyHtoD(d_A, h_A, memSizeA));
+	checkCudaErrors(cuMemcpyHtoD(d_B, h_B, memSizeB));
+
+	// Setup execution parameters
+	dim3 threads(blockSize, blockSize);
+	dim3 grid(dimsB.x / threads.x, dimsA.y / threads.y);
+
+	checkCudaErrors(cuCtxSynchronize());
+
+	// Execute the kernel with timer
+	double totalLeadTime = 0;
+	StopWatchWin pfTimer;
+	pfTimer.start();
+	for (int i = 0; i < NLTER; i++) {
+		StopWatchWin timer;
+		timer.start();
+
+		// matrixMulCUDA(h_C, h_A, h_B, dimsA.x, dimsB.x);
+
+		timer.stop();
+		checkCudaErrors(cuCtxSynchronize());
+
+		totalLeadTime += timer.getTime();
+		cout << "Lead time (" << i << "): " << timer.getTime() << endl;
+	}
+	pfTimer.stop();
+	cout << "Total lead time: " << totalLeadTime << endl;
+	cout << "Average lead time: " << totalLeadTime / NLTER << endl;
+	cout << "Performance time: " << pfTimer.getTime() << endl;
+
+	// Copy result from device to host
+	checkCudaErrors(cuMemcpyDtoH(h_C, d_C, memSizeC));
+	bool correct = CheckResult(dimsA, dimsC, h_C);
+
+	// Clean up memory
+	delete[] h_A;
+	delete[] h_B;
+	delete[] h_C;
+
+	checkCudaErrors(cuMemFree(d_A));
+	checkCudaErrors(cuMemFree(d_B));
+	checkCudaErrors(cuMemFree(d_C));
+
+	cuProfilerStop();
+
+	if (correct) {
+		return EXIT_SUCCESS;
+	}
+	else {
+		return EXIT_FAILURE;
+	}
+}
+
+int MatrixMultiplyUsingCUBLAS(const dim3 &dimsA, const dim3 &dimsB, int blockSize) {
+
+	// Allocate host memory for matrices A, B and C
+	unsigned int sizeA = dimsA.x * dimsA.y;
+	unsigned int memSizeA = sizeA * sizeof(MATRIX_DT);
+	MATRIX_DT *h_A = new MATRIX_DT[memSizeA];
+
+	unsigned int sizeB = dimsB.x * dimsB.y;
+	unsigned int memSizeB = sizeB * sizeof(MATRIX_DT);
+	MATRIX_DT *h_B = new MATRIX_DT[memSizeB];
+
+	dim3 dimsC(dimsB.x, dimsA.y, 1);
+	unsigned int memSizeC = dimsC.x * dimsC.y * sizeof(MATRIX_DT);
+	MATRIX_DT *h_C = new MATRIX_DT[memSizeC];
+
+	if (h_A == NULL || h_B == NULL || h_C == NULL) {
+		cerr << "Failed to allocate host matrix!" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	// Initialize host memory
+	constantInit(h_A, sizeA, ValA);
+	constantInit(h_B, sizeB, ValB);
+
+	// Allocate device memory
+	MATRIX_DT *d_A, *d_B, *d_C;
+	checkCudaErrors(cudaMalloc((void **)&d_A, memSizeA));
+	checkCudaErrors(cudaMalloc((void **)&d_B, memSizeB));
+	checkCudaErrors(cudaMalloc((void **)&d_C, memSizeC));
+
+	// Copy host memory to device
+	checkCudaErrors(cudaMemcpy(d_A, h_A, memSizeA, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_B, h_B, memSizeB, cudaMemcpyHostToDevice));
+
+	// Perform matrix mutiply function of CUBLAS with timer
+	cout << "Computing result using CUBLAS..." << endl;
+
+	cublasHandle_t handle;
+	checkCudaErrors(cublasCreate(&handle));
+
+	const float alpha = ALPHA;
+	const float beta = BETA;
+
+	// Perform warmup operation with CUBLAS
+	checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+		dimsB.x, dimsA.y, dimsA.x,
+		&alpha, d_B, dimsB.x, d_A, dimsA.x, &beta, d_C, dimsB.x));
+	checkCudaErrors(cuCtxSynchronize());
+
+	double totalLeadTime = 0;
+	StopWatchWin pfTimer;
+	pfTimer.start();
+	for (int i = 0; i < NLTER; i++) {
+		StopWatchWin timer;
+		timer.start();
+
+		checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+			dimsB.x, dimsA.y, dimsA.x,
+			&alpha, d_B, dimsB.x, d_A, dimsA.x, &beta, d_C, dimsB.x));
+
+		timer.stop();
+		checkCudaErrors(cuCtxSynchronize());
+
+		totalLeadTime += timer.getTime();
+		cout << "Lead time (" << i << "): " << timer.getTime() << endl;
+	}
+	pfTimer.stop();
+	cout << "Total lead time: " << totalLeadTime << endl;
+	cout << "Average lead time: " << totalLeadTime / NLTER << endl;
+	cout << "Performance time: " << pfTimer.getTime() << endl;
+
+	// Copy result from device to host
+	checkCudaErrors(cudaMemcpy(h_C, d_C, memSizeC, cudaMemcpyDeviceToHost));
+	bool correct = CheckResult(dimsA, dimsC, h_C);
+
+	// Destroy the handle
+	checkCudaErrors(cublasDestroy(handle));
+
+	// Clean up memory
+	delete[] h_A;
+	delete[] h_B;
+	delete[] h_C;
+
+	checkCudaErrors(cudaFree(d_A));
+	checkCudaErrors(cudaFree(d_B));
+	checkCudaErrors(cudaFree(d_C));
+
+	cudaDeviceReset();
+
+	if (correct) {
+		return EXIT_SUCCESS;	// return value = 1
+	}
+	else {
+		return EXIT_FAILURE;	// return value = 0
+	}
+}
+
+
+void MatrixMultiplyCPU(MATRIX_DT* C, MATRIX_DT* A, MATRIX_DT* B, int wC, int hC, int wA) {
+
+	for (int i = 0; i < hC; i++) {
+		for (int j = 0; j < wC; j++) {
+			//C[i * wC + j] = matrixSubMulCPU(i, j, A, B, wA, wC);
+			// Csub is used to store the element
+			MATRIX_DT Csub = 0;
+
+			// Loop over all the sub-matrices of A and B
+			for (int k = j, l = i; k <= j + wA - 1; k++, l += wC) {
+				// Multiply the two matrices together
+				Csub += A[k] * B[l];
+			}
+			C[i * wC + j] = Csub;
+		}
+	}
+}
+
+bool CheckResult(const dim3& dimsA, const dim3& dimsC, const MATRIX_DT* h_C) {
+
+	// Check the result
+	cout << "Checking computed result for correctness: ";
 
 	bool correct = true;
 
 	// test relative error by the formula
-	// |<x, y>_cpu - <x,y>_gpu|/<|x|, |y|>  < eps
+	//     |<x, y>_cpu - <x,y>_gpu|/<|x|, |y|>  < eps
 
-	for (int i = 0; i < (int)(dimsP.x * dimsP.y); i++) {
-		double absErr = fabs(f_P[i] - (dimsM.x * ValN));
-		double dotLength = dimsM.x;
-		double absVal = fabs(f_P[i]);
-		double relErr = absErr / absVal / dotLength;
+	for (int i = 0; i < (int)(dimsC.x * dimsC.y); i++) {
+		double abs_err = fabs(h_C[i] - (dimsA.x * ValB));
+		double dot_length = dimsA.x;
+		double abs_val = fabs(h_C[i]);
+		double rel_err = abs_err / abs_val / dot_length;
 
-		if (relErr > EPS) {
-			//cerr << "Error! Matrix[" << i << "]=" << f_P[i]
-			//	<< " , ref=" << dimsM.x * ValN
-			//	<< " error term is > " << EPS << endl;
+		if (rel_err > EPS) {
+			cerr << "Error! Matrix[" << i << " ]=" << h_C[i]
+				<< " , ref=" << dimsA.x * ValB
+				<< " error term is > " << EPS << endl;
 			correct = false;
 		}
 	}
@@ -197,4 +335,11 @@ bool MatrixMultiplication::CheckResult(const dim3& dimsM, const dim3& dimsP, con
 	}
 
 	return correct;
+}
+
+void constantInit(MATRIX_DT dataArr[], const int arrSize, const MATRIX_DT value) {
+
+	for (int i = 0; i < arrSize; i++) {
+		dataArr[i] = value;
+	}
 }

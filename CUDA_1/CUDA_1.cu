@@ -1,82 +1,72 @@
 ﻿#include "CUDA_1.cuh"
 
-using std::cout;
-using std::endl;
-
-MulCUDA::MulCUDA(void)
+/**
+* Matrix multiplication (CUDA Kernel) on the device: C = A * B
+* wA is A's width and wB is B's width
+*/
+__global__ void matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
 {
+	// Block index
+	int bx = __cudaGet_blockIdx().x;
+	int by = __cudaGet_blockIdx().y;
 
-}
+	// Thread index
+	int tx = __cudaGet_threadIdx().x;
+	int ty = __cudaGet_threadIdx().y;
 
-MulCUDA::~MulCUDA(void)
-{
+	// Index of the first sub-matrix of A processed by the block
+	int aBegin = wA * BLOCK_SIZE * by;
 
-}
+	// Index of the last sub-matrix of A processed by the block
+	int aEnd = aBegin + wA - 1;
 
-__global__ void helloWorld(char *str)
-{
-	int idx = __cudaGet_blockIdx().x * __cudaGet_blockDim().x + __cudaGet_threadIdx().x;
-	str[idx] += idx;
-}
+	// Step size used to iterate through the sub-matrices of A
+	int aStep = BLOCK_SIZE;
 
-char* MulCUDA::cudaExample(char *str)
-{
-	// allocate memory on the device
-	char *d_str;
-	size_t size = sizeof(str);
-	cudaMalloc((void**)&d_str, size);
+	// Index of the first sub-matrix of B processed by the block
+	int bBegin = BLOCK_SIZE * bx;
 
-	// copy the string to the device
-	cudaMemcpy(d_str, str, size, cudaMemcpyHostToDevice);
+	// Step size used to iterate through the sub-matrices of B
+	int bStep = BLOCK_SIZE * wB;
 
-	// set the grid and block sizes
-	dim3 dimGrid(2);	// one block per word
-	dim3 dimBlock(6);	// one thread per character
+	// Csub is used to store the element of the block sub-matrix
+	// that is computed by the thread
+	float Csub = 0;
 
-	// invoke the kernel
-	helloWorld << < dimGrid, dimBlock >> > (d_str);
-
-	// retrieve the results from the device
-	cudaMemcpy(str, d_str, size, cudaMemcpyDeviceToHost);
-
-	// free up the allocated memory on the device
-	cudaFree(d_str);
-
-	return str;
-}
-
-__global__ void mulMatrixCUDA(float *P, float *M, float *N, int widthM, int widthN)
-{
-	int mBegin	= widthM * widthN * BLOCKSIZE;
-	int mEnd	= mBegin + widthM - 1;
-	int mStep	= BLOCKSIZE;
-	
-	int nBegin	= BLOCKSIZE * __cudaGet_blockIdx().x;
-	int nStep	= BLOCKSIZE * widthN;
-
-	float Csub	= 0;
-
-	for (int mIndex = mBegin, nIndex = nBegin; mIndex <= mEnd; mIndex += mStep, nIndex += nStep)
+	// Loop over all the sub-matrices of A and B
+	// required to compute the block sub-matrix
+	for (int a = aBegin, b = bBegin;
+		a <= aEnd;
+		a += aStep, b += bStep)
 	{
-		__shared__ float Ms[BLOCKSIZE][BLOCKSIZE];
-		__shared__ float Ns[BLOCKSIZE][BLOCKSIZE];
 
-		Ms[__cudaGet_threadIdx().y][__cudaGet_threadIdx().x]
-			= M[mBegin + widthM * __cudaGet_threadIdx().y + __cudaGet_threadIdx().x];
+		// Declaration of the shared memory array As used to
+		// store the sub-matrix of A
+		float As[BLOCK_SIZE][BLOCK_SIZE];
 
-		Ns[__cudaGet_threadIdx().y][__cudaGet_threadIdx().x]
-			= N[nBegin + widthN * __cudaGet_threadIdx().y + __cudaGet_threadIdx().x];
+		// Declaration of the shared memory array Bs used to
+		// store the sub-matrix of B
+		float Bs[BLOCK_SIZE][BLOCK_SIZE];
 
+		// Load the matrices from device memory
+		// to shared memory; each thread loads
+		// one element of each matrix
+		As[ty][tx] = A[a + wA * ty + tx];
+		Bs[ty][tx] = B[b + wB * ty + tx];
 
-		for (int i = 0; i < BLOCKSIZE; ++i)
+		// Multiply the two matrices together;
+		// each thread computes one element
+		// of the block sub-matrix
+#pragma unroll
+
+		for (int k = 0; k < BLOCK_SIZE; ++k)
 		{
-			Csub += Ms[__cudaGet_threadIdx().y][i] * Ns[i][__cudaGet_threadIdx().x];
+			Csub += As[ty][k] * Bs[k][tx];
 		}
-
 	}
 
-
-	int pIndex = widthM * BLOCKSIZE * __cudaGet_blockIdx().y + BLOCKSIZE * __cudaGet_blockIdx().x;
-	P[pIndex + widthM * __cudaGet_threadIdx().y + __cudaGet_threadIdx().x];
+	// Write the block sub-matrix to device memory;
+	// each thread writes one element
+	int c = wB * BLOCK_SIZE * by + BLOCK_SIZE * bx;
+	C[c + wB * ty + tx] = Csub;
 }
-
