@@ -1,6 +1,9 @@
 # Parallel Processing(Yonsei Wonju univ. - CSE4006-01)
 CUDA Project
 
+## 알림
+CUDA 라이브러리 컴파일 과정에 심각한 에러가 발생하여 중단. (정상 작동하는 프로젝트를 카피하여 덮어씌워서 해결)
+
 ## Matrix multiplication
  - 정방형의 행렬 곱셈
  - P = M * N
